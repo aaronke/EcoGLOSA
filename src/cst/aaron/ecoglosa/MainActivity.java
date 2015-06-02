@@ -56,7 +56,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
 	private LocationManager locationManager;
 	private static double current_speed, current_distance;
 	private final static double RSU_LATI=-113.530646, RSU_LONG=53.526871;
-	private SpeedometerView speedometerView;
+	private static SpeedometerView speedometerView;
 	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -391,16 +391,28 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
    }
    
     private static void UpdateUI(InfoEntity infoentity){
-    	
+    	double critial_speed=3.6*infoentity.getDistance()/infoentity.getSignal_time();
+    	if (critial_speed>200) {
+			critial_speed=200;
+		}
     	switch (infoentity.getSignal_color_code()) {
 		case InfoEntity.SIGNAL_RED:
 			count_TextView.setTextColor(Color.RED);
+			speedometerView.addColoredRange(critial_speed, 200, Color.RED);
+			speedometerView.addColoredRange(infoentity.getDistance()/(infoentity.getSignal_time()+60), critial_speed, Color.GREEN);
+			speedometerView.addColoredRange(infoentity.getDistance()/(infoentity.getSignal_time()+63), infoentity.getDistance()/(infoentity.getSignal_time()+60), Color.YELLOW);
 			break;
 		case InfoEntity.SIGNAL_YELLOW:
 			count_TextView.setTextColor(Color.YELLOW);
+			speedometerView.addColoredRange(critial_speed, 200, Color.YELLOW);
+			speedometerView.addColoredRange(infoentity.getDistance()/(infoentity.getSignal_time()+60), critial_speed, Color.GREEN);
+			speedometerView.addColoredRange(infoentity.getDistance()/(infoentity.getSignal_time()+120), infoentity.getDistance()/(infoentity.getSignal_time()+60), Color.RED);
 			break;
 		case InfoEntity.SINGAL_GREEN:
 			count_TextView.setTextColor(Color.GREEN);
+			speedometerView.addColoredRange(critial_speed, 200, Color.GREEN);
+			speedometerView.addColoredRange(infoentity.getDistance()/(infoentity.getSignal_time()+3), critial_speed, Color.YELLOW);
+			speedometerView.addColoredRange(infoentity.getDistance()/(infoentity.getSignal_time()+63), infoentity.getDistance()/(infoentity.getSignal_time()+3), Color.RED);
 			break;
 		default: 
 			count_TextView.setVisibility(TextView.GONE);
