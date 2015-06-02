@@ -5,8 +5,8 @@ public class InfoEntity {
 	private int signal_time=-1; // default time is one second;
 	private int direction_code=-1; // 1: right and straight, 2: left turn; 3: straight;
 	
-	private double speed=-1;
-	private double distance=-1;
+	private double speed=25;
+	private double distance=200;
 	private double max_speed=80/3.6;
 	
 	public static final int SIGNAL_NONE=0,SIGNAL_RED=1,SIGNAL_YELLOW=2,SINGAL_GREEN=3;

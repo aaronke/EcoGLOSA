@@ -57,6 +57,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
 	private static double current_speed, current_distance;
 	private final static double RSU_LATI=-113.530646, RSU_LONG=53.526871;
 	private static SpeedometerView speedometerView;
+	private static boolean voice_message_flag=true;
 	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -293,13 +294,19 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
 				InfoEntity temp_infoEntity=new InfoEntity();
 					temp_infoEntity=MessageParse(readMessageString);
 				UpdateUI(temp_infoEntity);
-				speakToText(GLOSAUpdate(temp_infoEntity));
+				
+				if (voice_message_flag) {
+					speakToText(GLOSAUpdate(temp_infoEntity));
+					voice_message_flag=false;
+				}
+				
 				break;
 			case MESSAGE_CONNECTED:
 				connecttion_TextView.setText("Connected");
 				break;
 			case MESSAGE_DISCONNECTE:
 				connecttion_TextView.setText("not Connected");
+			//	voice_message_flag=false;
 				 break;
 			default:
 				break;
@@ -328,8 +335,8 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
 			infoEntity.setDirection_code(InfoEntity.SIGNAL_DIRECTION_STRAIGHT);
 			infoEntity.setSignal_color_code(InfoEntity.SIGNAL_YELLOW);
 		}
-    	infoEntity.setSpeed(current_speed);
-    	infoEntity.setDistance(current_distance);
+    	infoEntity.setSpeed(25);
+    	infoEntity.setDistance(250);
     	return infoEntity;
     	
     }
@@ -391,28 +398,40 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
    }
    
     private static void UpdateUI(InfoEntity infoentity){
-    	double critial_speed=3.6*infoentity.getDistance()/infoentity.getSignal_time();
-    	if (critial_speed>200) {
-			critial_speed=200;
+    	double critical_speed=3.6*infoentity.getDistance()/infoentity.getSignal_time();
+    	boolean critical_flag=true;
+    	if (critical_speed>=200) {
+    		critical_speed=200;
+			critical_flag=false;
 		}
+    	speedometerView.clearColoredRanges();
     	switch (infoentity.getSignal_color_code()) {
 		case InfoEntity.SIGNAL_RED:
 			count_TextView.setTextColor(Color.RED);
-			speedometerView.addColoredRange(critial_speed, 200, Color.RED);
-			speedometerView.addColoredRange(infoentity.getDistance()/(infoentity.getSignal_time()+60), critial_speed, Color.GREEN);
-			speedometerView.addColoredRange(infoentity.getDistance()/(infoentity.getSignal_time()+63), infoentity.getDistance()/(infoentity.getSignal_time()+60), Color.YELLOW);
+			if (critical_flag) {
+				speedometerView.addColoredRange(critical_speed, 200, Color.RED);
+			}
+			speedometerView.addColoredRange(3.6*infoentity.getDistance()/(infoentity.getSignal_time()+60), critical_speed, Color.GREEN);
+			speedometerView.addColoredRange(3.6*infoentity.getDistance()/(infoentity.getSignal_time()+63), 3.6*infoentity.getDistance()/(infoentity.getSignal_time()+60), Color.YELLOW);
 			break;
 		case InfoEntity.SIGNAL_YELLOW:
 			count_TextView.setTextColor(Color.YELLOW);
-			speedometerView.addColoredRange(critial_speed, 200, Color.YELLOW);
-			speedometerView.addColoredRange(infoentity.getDistance()/(infoentity.getSignal_time()+60), critial_speed, Color.GREEN);
-			speedometerView.addColoredRange(infoentity.getDistance()/(infoentity.getSignal_time()+120), infoentity.getDistance()/(infoentity.getSignal_time()+60), Color.RED);
+			if (critical_flag) {
+				speedometerView.addColoredRange(critical_speed, 200, Color.YELLOW);
+			}
+			
+			speedometerView.addColoredRange(3.6*infoentity.getDistance()/(infoentity.getSignal_time()+60), critical_speed, Color.GREEN);
+			speedometerView.addColoredRange(3.6*infoentity.getDistance()/(infoentity.getSignal_time()+120), 3.6*infoentity.getDistance()/(infoentity.getSignal_time()+60), Color.RED);
 			break;
 		case InfoEntity.SINGAL_GREEN:
 			count_TextView.setTextColor(Color.GREEN);
-			speedometerView.addColoredRange(critial_speed, 200, Color.GREEN);
-			speedometerView.addColoredRange(infoentity.getDistance()/(infoentity.getSignal_time()+3), critial_speed, Color.YELLOW);
-			speedometerView.addColoredRange(infoentity.getDistance()/(infoentity.getSignal_time()+63), infoentity.getDistance()/(infoentity.getSignal_time()+3), Color.RED);
+			if (critical_flag) {
+				speedometerView.addColoredRange(critical_speed, 200, Color.GREEN);
+			}
+			if (3.6*infoentity.getDistance()/(infoentity.getSignal_time()+3)<200) {
+				speedometerView.addColoredRange(3.6*infoentity.getDistance()/(infoentity.getSignal_time()+3), critical_speed, Color.YELLOW);
+			}
+			speedometerView.addColoredRange(3.6*infoentity.getDistance()/(infoentity.getSignal_time()+63), 3.6*infoentity.getDistance()/(infoentity.getSignal_time()+3), Color.RED);
 			break;
 		default: 
 			count_TextView.setVisibility(TextView.GONE);
