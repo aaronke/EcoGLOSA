@@ -2,14 +2,17 @@ package cst.aaron.ecoglosa;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Locale;
 import java.util.UUID;
+
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.hardware.Camera.Size;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -21,6 +24,7 @@ import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -54,10 +58,11 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
 	private final static String TURN_RED="Signal will turn red ahead";
 	private final static String RED_SIGNAL_AHEAD="Red light ahead";
 	private LocationManager locationManager;
-	private static double current_speed, current_distance;
-	private final static double RSU_LATI=-113.530646, RSU_LONG=53.526871;
+	private static double current_speed=-1, current_distance=-1;
+	private final static double RSU_LATI=53.522943, RSU_LONG=-113.530699;
 	private static SpeedometerView speedometerView;
-	private static boolean voice_message_flag=true;
+	private static boolean voice_message_flag=true,connected_flag=false;
+	private static ArrayList<Double> distance_arrayList=new ArrayList<Double>();
 	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -164,6 +169,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
     			Log.v("bluetooth", "serversocket create success");
 			} catch (Exception e) {
 				// TODO: handle exception	
+				
 				Log.v("bluetooth", "serversocket create fail");
 			}
     		mServerSocket=tmp;
@@ -183,7 +189,6 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
 				}
     			if (mBluetoothSocket!=null) {
 					// do something about the socket;
-    			
     			
     			connected(mBluetoothSocket);
     				Log.v("bluetooth", "bluetooth connected");
@@ -232,7 +237,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
 				//tmpOutputStream=socket.getOutputStream();
 			} catch (Exception e) {
 				// TODO: handle exception
-				disconnected_UI();
+				mHandler.obtainMessage(MESSAGE_DISCONNECTE);
 				Log.v("bluetooth", "tmp sockets not created");
 				
 			}
@@ -250,13 +255,13 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
 					
 					bytes=mmInputStream.read(buffer);
 					//mmOutputStream.write(sent_message);
-				//	Log.v("bluetooth", "Send Message:"+messageString);
-					mHandler.obtainMessage(MESSAGE_CONNECTED).sendToTarget();
 					
+					mHandler.obtainMessage(MESSAGE_CONNECTED).sendToTarget();
 					mHandler.obtainMessage(MESSAGE_READ, bytes, -1, buffer).sendToTarget();
+					
 				} catch (Exception e) {
 					// TODO: handle exception
-					disconnected_UI();
+					mHandler.obtainMessage(MESSAGE_DISCONNECTE).sendToTarget();
 					Log.v("bluetooth", "disconnected");
 				}
 			}
@@ -295,7 +300,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
 					temp_infoEntity=MessageParse(readMessageString);
 				UpdateUI(temp_infoEntity);
 				
-				if (voice_message_flag) {
+				if (voice_message_flag && connected_flag) {
 					speakToText(GLOSAUpdate(temp_infoEntity));
 					voice_message_flag=false;
 				}
@@ -303,10 +308,13 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
 				break;
 			case MESSAGE_CONNECTED:
 				connecttion_TextView.setText("Connected");
+				connected_flag=true;
 				break;
 			case MESSAGE_DISCONNECTE:
 				connecttion_TextView.setText("not Connected");
-			//	voice_message_flag=false;
+				voice_message_flag=true;
+				connected_flag=false;
+				disconnected_UI();
 				 break;
 			default:
 				break;
@@ -335,21 +343,37 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
 			infoEntity.setDirection_code(InfoEntity.SIGNAL_DIRECTION_STRAIGHT);
 			infoEntity.setSignal_color_code(InfoEntity.SIGNAL_YELLOW);
 		}
-    	infoEntity.setSpeed(25);
-    	infoEntity.setDistance(250);
+    	if (current_speed!=-1) {
+    		infoEntity.setSpeed(current_speed);
+    		Log.v("STTest", current_speed+"speed");
+		}
+    	if (current_distance!=-1) {
+    		infoEntity.setDistance(current_distance);
+    		Log.v("STTest", current_distance+"distance");
+		}
     	return infoEntity;
     	
     }
    private static void disconnected_UI(){
-		count_TextView.setVisibility(TextView.GONE);
+		count_TextView.setVisibility(View.INVISIBLE);
 		connecttion_TextView.setText("not Connected");
+		speedometerView.clearColoredRanges();
    }
    
    // get the advice message type;
    private static String GLOSAUpdate(InfoEntity infoEntity){
+	   
 	   String advice_mesageString = null;
 	   double v_0=infoEntity.getSpeed();
 	   double x=infoEntity.getDistance();
+	   distance_arrayList.add(x);
+	   int array_size=distance_arrayList.size();
+	   if (array_size>4) {
+		   if (distance_arrayList.get(array_size-1)>distance_arrayList.get(array_size-2) && distance_arrayList.get(array_size-2)>distance_arrayList.get(array_size-3)) {
+				mHandler.obtainMessage(MESSAGE_DISCONNECTE);
+			   }
+	   }
+	  
 	   double v_max=infoEntity.getMax_speed();
 	   double t1=x/v_0;
 	   int t_m=infoEntity.getSignal_time();
@@ -364,7 +388,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
 		   }else if (t2<=t_m && t1>t_m) {
 			double v_s;
 			v_s=v_0+a_r*t_m+Math.pow((a_r*(a_r*t_m*t_m+2*t_m*v_0-2*x)), 0.5);
-			advice_mesageString=SPEED_UP+v_s;
+			advice_mesageString=SPEED_UP+(int)v_s;
 		   }else if (t2>t_m) {
 			advice_mesageString=TURN_RED;
 		   }else {
@@ -382,7 +406,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
 			   advice_mesageString=KEEP_CURRENT_SPEED;
 		   }else if (t1<t_m && t2>t_m) {
 			   double v_s=v_0-a_d*t_m+Math.pow((a_d*(a_d*t_m*t_m-2*t_m*v_0+2*x)), 0.5);
-			   advice_mesageString=SLOW_DOWN+v_s;
+			   advice_mesageString=SLOW_DOWN+(int)v_s;
 		   }else if (t2<=t_m) {
 			   advice_mesageString=RED_SIGNAL_AHEAD;
 		   }else {
@@ -398,6 +422,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
    }
    
     private static void UpdateUI(InfoEntity infoentity){
+    	count_TextView.setVisibility(View.VISIBLE);
     	double critical_speed=3.6*infoentity.getDistance()/infoentity.getSignal_time();
     	boolean critical_flag=true;
     	if (critical_speed>=200) {
@@ -438,7 +463,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
 			connecttion_TextView.setText("not Connected");
 			break;
 		}
-    	
+    	speedometerView.setSpeed(infoentity.getSpeed());
     	count_TextView.setText(""+infoentity.getSignal_time());
     	
     }
@@ -490,6 +515,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
 		temp_location.setLatitude(RSU_LATI);
 		temp_location.setLongitude(RSU_LONG);
 		current_distance=location.distanceTo(temp_location);
+		Log.v("STTest", "speed:"+current_speed+"distance:"+current_distance);
 	}
 
 	@Override
