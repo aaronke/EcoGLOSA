@@ -259,7 +259,7 @@ int id action_context_bar 0x7f09001d
 int id action_menu_divider 0x7f090002
 int id action_menu_presenter 0x7f090003
 int id action_mode_close_button 0x7f090024
-int id action_settings 0x7f090040
+int id action_settings 0x7f090041
 int id activity_chooser_view_content 0x7f090025
 int id always 0x7f09000f
 int id beginning 0x7f090016
@@ -289,6 +289,7 @@ int id normal 0x7f090007
 int id progress_circular 0x7f090004
 int id progress_horizontal 0x7f090005
 int id radio 0x7f09002f
+int id record_data_button 0x7f090040
 int id search_badge 0x7f090032
 int id search_bar 0x7f090031
 int id search_button 0x7f090033
@@ -363,6 +364,7 @@ int string direction_straight 0x7f0a0015
 int string disconnected_label 0x7f0a0011
 int string hello_world 0x7f0a000e
 int string logo_cst 0x7f0a0010
+int string record_data_confirm 0x7f0a0017
 int string signal_img_description 0x7f0a0013
 int style AppBaseTheme 0x7f0b008b
 int style AppTheme 0x7f0b008c

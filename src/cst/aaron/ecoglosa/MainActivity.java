@@ -1,8 +1,14 @@
 package cst.aaron.ecoglosa;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -12,24 +18,30 @@ import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
-import android.hardware.Camera.Size;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.speech.tts.TextToSpeech;
 import android.support.v7.app.ActionBarActivity;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class MainActivity extends ActionBarActivity implements LocationListener{
+public class MainActivity extends ActionBarActivity implements LocationListener,SensorEventListener{
 
 	private static BluetoothAdapter mBluetoothAdapter;
 	private static final UUID MY_UUID=UUID.fromString("66841278-c3d1-11df-ab31-001de000a903");
@@ -59,10 +71,16 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
 	private final static String RED_SIGNAL_AHEAD="Red light ahead";
 	private LocationManager locationManager;
 	private static double current_speed=-1, current_distance=-1;
-	private final static double RSU_LATI=53.522943, RSU_LONG=-113.530699;
+	private final static double RSU_LATI=53.522912, RSU_LONG=-113.517829;
 	private static SpeedometerView speedometerView;
 	private static boolean voice_message_flag=true,connected_flag=false;
 	private static ArrayList<Double> distance_arrayList=new ArrayList<Double>();
+	private SensorManager sensorManager;
+	private Sensor accelerationSensor;
+	private Record_entity record_entity=new Record_entity();
+	private String device_id,file_name;
+	private final String FILE_PATH_STRING=Environment.getExternalStorageDirectory().getPath();
+	private CheckBox record_data_checkbox;
 	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,9 +90,8 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
         // setup UI view;
         count_TextView=(TextView)findViewById(R.id.signal_count);
         connecttion_TextView=(TextView)findViewById(R.id.connect_label);
-        
         speedometerView=(SpeedometerView)findViewById(R.id.speedometerview);
-        
+        record_data_checkbox=(CheckBox)findViewById(R.id.record_data_button);
         speedometerView.setLabelConverter(new SpeedometerView.LabelConverter() {
 			
 			@Override
@@ -90,12 +107,20 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
         
         speedometerView.setSpeed((int)(Math.random()*10+60));
         
-        speedometerView.addColoredRange(20, 80, Color.GREEN);
+       /* speedometerView.addColoredRange(20, 80, Color.GREEN);
         speedometerView.addColoredRange(80, 100, Color.YELLOW);
-        speedometerView.addColoredRange(100, 200, Color.RED);
-
+        speedometerView.addColoredRange(100, 200, Color.RED);*/
+        sensorManager=(SensorManager)this.getSystemService(SENSOR_SERVICE);
+        accelerationSensor=sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        sensorManager.registerListener(this, accelerationSensor,SensorManager.SENSOR_DELAY_NORMAL);
+        
+        
+        TelephonyManager tManager=(TelephonyManager)getSystemService(TELEPHONY_SERVICE);
+		device_id=tManager.getDeviceId();
+		file_name=createDir(FILE_PATH_STRING+"/EcoGLOSA/");
+		 
+		 
         locationManager=(LocationManager)getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
-
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, this);
         
         textToSpeech=new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {			
@@ -135,7 +160,15 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
              }
          }
     }
-
+    
+    private String createDir(String path){
+  		Log.v("test", "create fold");
+  		File file=new File(path);
+  		if (!file.exists()) {
+  			file.mkdir();
+  		}
+  		return path;
+  	}
     public static void speakToText(String string){
     	
     	textToSpeech.speak(string, TextToSpeech.QUEUE_FLUSH, null);
@@ -366,13 +399,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
 	   String advice_mesageString = null;
 	   double v_0=infoEntity.getSpeed();
 	   double x=infoEntity.getDistance();
-	   distance_arrayList.add(x);
-	   int array_size=distance_arrayList.size();
-	   if (array_size>4) {
-		   if (distance_arrayList.get(array_size-1)>distance_arrayList.get(array_size-2) && distance_arrayList.get(array_size-2)>distance_arrayList.get(array_size-3)) {
-				mHandler.obtainMessage(MESSAGE_DISCONNECTE);
-			   }
-	   }
+	  
 	  
 	   double v_max=infoEntity.getMax_speed();
 	   double t1=x/v_0;
@@ -423,6 +450,13 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
    
     private static void UpdateUI(InfoEntity infoentity){
     	count_TextView.setVisibility(View.VISIBLE);
+    	 distance_arrayList.add(infoentity.getDistance());
+  	   int array_size=distance_arrayList.size();
+  	   if (array_size>4) {
+  		   if (distance_arrayList.get(array_size-1)>distance_arrayList.get(array_size-2) && distance_arrayList.get(array_size-2)>distance_arrayList.get(array_size-3)) {
+  				mHandler.obtainMessage(MESSAGE_DISCONNECTE);
+  			   }
+  	   }
     	double critical_speed=3.6*infoentity.getDistance()/infoentity.getSignal_time();
     	boolean critical_flag=true;
     	if (critical_speed>=200) {
@@ -516,6 +550,10 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
 		temp_location.setLongitude(RSU_LONG);
 		current_distance=location.distanceTo(temp_location);
 		Log.v("STTest", "speed:"+current_speed+"distance:"+current_distance);
+		record_entity.setLatitude(location.getLatitude());
+		record_entity.setLongitude(location.getLongitude());
+		record_entity.setSpeed(location.getSpeed());
+		record_entity.setDistance(current_distance);
 	}
 
 	@Override
@@ -533,6 +571,65 @@ public class MainActivity extends ActionBarActivity implements LocationListener{
 	@Override
 	public void onStatusChanged(String provider, int status, Bundle extras) {
 		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onAccuracyChanged(Sensor sensor, int accuracy) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onSensorChanged(SensorEvent event) {
+		// TODO Auto-generated method stub
+		Sensor sensor=event.sensor;
+		switch (sensor.getType()) {
+		case Sensor.TYPE_ACCELEROMETER:
+			record_entity.setAcc_x(event.values[0]);
+			record_entity.setAcc_y(event.values[1]);
+			record_entity.setAcc_z(event.values[2]);
+			record_entity.setTime(System.currentTimeMillis());
+			break;
+		default:
+			break;
+		}
+		if (record_data_checkbox.isChecked()) {
+			writeToFile(record_entity);
+		}
+		
+	}
+	
+private void writeToFile(Record_entity entity){
+		
+		SimpleDateFormat dFormat=new SimpleDateFormat("MM_dd_yyyy");
+		String nowdataString=dFormat.format(new Date());
+		File sensorsdatafile=new File(file_name+nowdataString+device_id+"EcoGLOSA.txt");
+		boolean sensorsdata=true;
+	
+		try {
+			if (!sensorsdatafile.exists()) {
+				sensorsdatafile.createNewFile();
+				sensorsdata=false;
+			}
+			
+			OutputStream myOutputStream=new FileOutputStream(sensorsdatafile,true);
+			OutputStreamWriter myOutputStreamWriter=new OutputStreamWriter(myOutputStream);
+			if (!sensorsdata) {
+				myOutputStreamWriter.append("Time,Speed,Distance,Acc_x,Acc_y,Acc_z,Longitude,Latitude\n");
+			}
+		
+			String sensor_tmp=entity.getTime()+","+entity.getSpeed()+","+entity.getDistance()+","+entity.getAcc_x()+","+entity.getAcc_y()+","+entity.getAcc_z()+","
+			+entity.getLongitude()+","+entity.getLatitude()+"\n";
+			
+			myOutputStreamWriter.append(sensor_tmp);
+			
+			myOutputStreamWriter.close();
+			myOutputStream.close();
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
+		
 		
 	}
 }

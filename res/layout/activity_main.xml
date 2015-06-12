@@ -42,4 +42,9 @@
           android:layout_height="wrap_content"
           android:layout_below="@id/signal_count"
           />
+      <CheckBox 
+          android:id="@+id/record_data_button"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:checked="false"/>
 </RelativeLayout>

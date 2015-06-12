@@ -10,4 +10,5 @@
 	<string name="direction_left">left turn is allowed</string>
 	<string name="direction_straight">go through is allowed</string>
 	<string name="direction_right"> right turn is allowed</string>
+	<string name="record_data_confirm">click to record data</string>
 </resources>
