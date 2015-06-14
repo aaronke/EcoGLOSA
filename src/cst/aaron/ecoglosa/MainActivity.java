@@ -71,7 +71,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 	private final static String RED_SIGNAL_AHEAD="Red light ahead";
 	private LocationManager locationManager;
 	private static double current_speed=-1, current_distance=-1;
-	private final static double RSU_LATI=53.522912, RSU_LONG=-113.517829;
+	private final static double RSU_LATI=53.522902, RSU_LONG=-113.517852;
 	private static SpeedometerView speedometerView;
 	private static boolean voice_message_flag=true,connected_flag=false;
 	private static ArrayList<Double> distance_arrayList=new ArrayList<Double>();
@@ -104,7 +104,6 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
         speedometerView.setMaxSpeed(200);
         speedometerView.setMajorTickStep(20);
         speedometerView.setMinorTicks(1);
-        
         speedometerView.setSpeed((int)(Math.random()*10+60));
         
        /* speedometerView.addColoredRange(20, 80, Color.GREEN);
