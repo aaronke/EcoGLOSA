@@ -7,11 +7,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 import java.util.UUID;
-
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
@@ -74,7 +72,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 	private final static double RSU_LATI=53.522902, RSU_LONG=-113.517852;
 	private static SpeedometerView speedometerView;
 	private static boolean voice_message_flag=true,connected_flag=false;
-	private static ArrayList<Double> distance_arrayList=new ArrayList<Double>();
+	//private static ArrayList<Double> distance_arrayList=new ArrayList<Double>();
 	private SensorManager sensorManager;
 	private Sensor accelerationSensor;
 	private Record_entity record_entity=new Record_entity();
@@ -183,7 +181,6 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 				}
 			}
 			break;
-
 		default:
 			break;
 		}
@@ -196,9 +193,10 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     		
     		BluetoothServerSocket tmp=null;
     		try {
-				
+    			
     			tmp=mBluetoothAdapter.listenUsingInsecureRfcommWithServiceRecord(MY_NAME, MY_UUID);
     			Log.v("bluetooth", "serversocket create success");
+    			
 			} catch (Exception e) {
 				// TODO: handle exception	
 				
@@ -279,17 +277,31 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
     	}
     	public void run(){
     		byte[] buffer=new byte[1024];
-    		int bytes;
+    		int flag=0;
     		//String messageString="Hello, I am Android";
     	//	byte[] sent_message=messageString.getBytes();
     		while (true) {
 				try {
 					
-					bytes=mmInputStream.read(buffer);
+				//	bytes=mmInputStream.read(buffer);
 					//mmOutputStream.write(sent_message);
+					int  result = mmInputStream.read(buffer, 0, mmInputStream.available()); 
 					
-					mHandler.obtainMessage(MESSAGE_CONNECTED).sendToTarget();
-					mHandler.obtainMessage(MESSAGE_READ, bytes, -1, buffer).sendToTarget();
+					if (result>0) {
+					//	Log.v("STTest", "before result:"+result);
+						connected_flag=true;
+						mHandler.obtainMessage(MESSAGE_CONNECTED).sendToTarget();
+						mHandler.obtainMessage(MESSAGE_READ, result, -1, buffer).sendToTarget();
+						flag=0;
+						
+					}else {
+						flag++;
+						if (flag>50000) {
+							Log.v("STTest", "inside result:"+result);
+							mHandler.obtainMessage(MESSAGE_DISCONNECTE).sendToTarget();
+						}
+						
+					}
 					
 				} catch (Exception e) {
 					// TODO: handle exception
@@ -340,7 +352,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 				break;
 			case MESSAGE_CONNECTED:
 				connecttion_TextView.setText("Connected");
-				connected_flag=true;
+				
 				break;
 			case MESSAGE_DISCONNECTE:
 				connecttion_TextView.setText("not Connected");
@@ -414,7 +426,12 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 		   }else if (t2<=t_m && t1>t_m) {
 			double v_s;
 			v_s=v_0+a_r*t_m+Math.pow((a_r*(a_r*t_m*t_m+2*t_m*v_0-2*x)), 0.5);
-			advice_mesageString=SPEED_UP+(int)v_s;
+			if (v_s>v_max) {
+				advice_mesageString=TURN_RED;
+			}else {
+				advice_mesageString=SPEED_UP+(int)v_s;
+			}
+			
 		   }else if (t2>t_m) {
 			advice_mesageString=TURN_RED;
 		   }else {
@@ -432,7 +449,12 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 			   advice_mesageString=KEEP_CURRENT_SPEED;
 		   }else if (t1<t_m && t2>t_m) {
 			   double v_s=v_0-a_d*t_m+Math.pow((a_d*(a_d*t_m*t_m-2*t_m*v_0+2*x)), 0.5);
-			   advice_mesageString=SLOW_DOWN+(int)v_s;
+			   if (v_s<v_max && v_s >v_min) {
+				   advice_mesageString=SLOW_DOWN+(int)v_s;
+			   }else {
+				   advice_mesageString=RED_SIGNAL_AHEAD;
+			   }
+			   
 		   }else if (t2<=t_m) {
 			   advice_mesageString=RED_SIGNAL_AHEAD;
 		   }else {
@@ -448,14 +470,14 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
    }
    
     private static void UpdateUI(InfoEntity infoentity){
-    	count_TextView.setVisibility(View.VISIBLE);
-    	 distance_arrayList.add(infoentity.getDistance());
+       count_TextView.setVisibility(View.VISIBLE);
+      /* distance_arrayList.add(infoentity.getDistance());
   	   int array_size=distance_arrayList.size();
   	   if (array_size>4) {
   		   if (distance_arrayList.get(array_size-1)>distance_arrayList.get(array_size-2) && distance_arrayList.get(array_size-2)>distance_arrayList.get(array_size-3)) {
   				mHandler.obtainMessage(MESSAGE_DISCONNECTE);
   			   }
-  	   }
+  	   }*/
     	double critical_speed=3.6*infoentity.getDistance()/infoentity.getSignal_time();
     	boolean critical_flag=true;
     	if (critical_speed>=200) {
