@@ -7,10 +7,30 @@ public class Record_entity {
 	private float acc_x,acc_y,acc_z;
 	private float speed; 
 	private double distance;
+	private String message;
+	private int color_label;
 	
 	public Record_entity(){
 		
 	}
+
+	public int getColor_label() {
+		return color_label;
+	}
+
+	public void setColor_label(int color_label) {
+		this.color_label = color_label;
+	}
+
+
+	public String getMessage() {
+		return message;
+	}
+
+	public void setMessage(String message) {
+		this.message = message;
+	}
+
 
 	public double getDistance() {
 		return distance;

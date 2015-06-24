@@ -4,6 +4,7 @@ public class InfoEntity {
 	private int signal_color_code=-1; // 1: red, 2:yellow, 3: green;
 	private int signal_time=-1; // default time is one second;
 	private int direction_code=-1; // 1: right and straight, 2: left turn; 3: straight;
+	private double acceleration=0;
 	
 	private double speed=25;
 	private double distance=200;
@@ -14,6 +15,12 @@ public class InfoEntity {
 	
 	
 	
+	public double getAcceleration() {
+		return acceleration;
+	}
+	public void setAcceleration(double acceleration2) {
+		this.acceleration = acceleration2;
+	}
 	public double getSpeed() {
 		return speed;
 	}

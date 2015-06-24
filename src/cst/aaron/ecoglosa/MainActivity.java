@@ -79,6 +79,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 	private String device_id,file_name;
 	private final String FILE_PATH_STRING=Environment.getExternalStorageDirectory().getPath();
 	private CheckBox record_data_checkbox;
+	private static String voice_message;
 	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -296,11 +297,10 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 						
 					}else {
 						flag++;
-						if (flag>50000) {
+						if (flag>100000) {
 							Log.v("STTest", "inside result:"+result);
 							mHandler.obtainMessage(MESSAGE_DISCONNECTE).sendToTarget();
 						}
-						
 					}
 					
 				} catch (Exception e) {
@@ -402,6 +402,8 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 		count_TextView.setVisibility(View.INVISIBLE);
 		connecttion_TextView.setText("not Connected");
 		speedometerView.clearColoredRanges();
+		speedometerView.setSpeed(0);
+		voice_message=null;
    }
    
    // get the advice message type;
@@ -464,7 +466,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 	   }else {
 		   // do nothing;
 	   }
-	   
+	   voice_message=advice_mesageString;
 	   return advice_mesageString;
 	   
    }
@@ -611,6 +613,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener,
 			record_entity.setAcc_y(event.values[1]);
 			record_entity.setAcc_z(event.values[2]);
 			record_entity.setTime(System.currentTimeMillis());
+			record_entity.setMessage(voice_message);
 			break;
 		default:
 			break;
@@ -637,11 +640,11 @@ private void writeToFile(Record_entity entity){
 			OutputStream myOutputStream=new FileOutputStream(sensorsdatafile,true);
 			OutputStreamWriter myOutputStreamWriter=new OutputStreamWriter(myOutputStream);
 			if (!sensorsdata) {
-				myOutputStreamWriter.append("Time,Speed,Distance,Acc_x,Acc_y,Acc_z,Longitude,Latitude\n");
+				myOutputStreamWriter.append("Time,Speed,Distance,Acc_x,Acc_y,Acc_z,Longitude,Latitude,message\n");
 			}
 		
 			String sensor_tmp=entity.getTime()+","+entity.getSpeed()+","+entity.getDistance()+","+entity.getAcc_x()+","+entity.getAcc_y()+","+entity.getAcc_z()+","
-			+entity.getLongitude()+","+entity.getLatitude()+"\n";
+			+entity.getLongitude()+","+entity.getLatitude()+","+entity.getMessage()+"\n";
 			
 			myOutputStreamWriter.append(sensor_tmp);
 			
